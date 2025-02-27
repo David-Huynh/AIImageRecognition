@@ -51,6 +51,7 @@ def resize_flip_scale_image(filepath: str, label: int, resize=(256,256), size=(2
     image = tf_image.convert_image_dtype(image, tf.float32)  # Convert to float
     image = image / 255.0  # [0, 255] -> [0, 1]
     label = keras.ops.cast(label, dtype="float32") # Cast label to float
+    image = tf.clip_by_value(image, 0.0, 1.0) # Clip values
     return image, label
 
 class Mix:
