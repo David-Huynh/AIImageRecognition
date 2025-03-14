@@ -30,7 +30,7 @@ def color_jitter(image, brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1):
     image = tf.image.random_hue(image, max_delta=hue)
     return image
 
-def resize_flip_scale_image(filepath: str, label: int, resize=(256,256), size=(224, 224)) :
+def resize_flip_scale_image(filepath: str, label: int, resize=(256,256), size=(224, 224), model="resnet"):
     """ Loads an image then resizes, flips*, and scales it
     *Random flip 1/2 of the time
     Args:
@@ -49,10 +49,20 @@ def resize_flip_scale_image(filepath: str, label: int, resize=(256,256), size=(2
     image = tf_image.random_flip_up_down(image)  # Random flip
     image = color_jitter(image)  # Color jitter
     image = tf_image.convert_image_dtype(image, tf.float32)  # Convert to float
-    image = image / 255.0  # [0, 255] -> [0, 1]
-    label = keras.ops.cast(label, dtype="float32") # Cast label to float
-    image = tf.clip_by_value(image, 0.0, 1.0) # Clip values
+    if model == "resnet":
+        image = apply_resnet(image)
     return image, label
+
+def apply_resnet (image):
+    """Applies preprocessing for ResNet models expects input in the range [-1, 1]
+
+    Args:
+        image (_type_): image tensor
+    Returns:
+        _type
+    """
+    image = tf.keras.applications.resnet.preprocess_input(image)
+    return image
 
 class Mix:
     """CutMix data augmentation technique
@@ -77,11 +87,11 @@ class Mix:
         return gamma_1_sample / (gamma_1_sample + gamma_2_sample)
 
 
-    def get_box(self, lambda_value):
+    def get_box(self, lambda_value: float):
         """Helper function to get the bounding box
 
         Args:
-            lambda_value (_type_): percentage of the image to cut
+            lambda_value (float): [0,1] percentage of the image to cut
 
         Returns:
             _type_: where the cuts will be made for each image
