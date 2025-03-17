@@ -9,59 +9,57 @@ from tensorflow import clip_by_value
 from tensorflow import image as tf_image
 from tensorflow.random import gamma as tf_random_gamma
 
-SEED=7
-
-def color_jitter(image, brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1):
-    """Performs color jitter on an image
-
-    Args:
-        image (_type_): _description_
-        brightness (float, optional): _description_. Defaults to 0.2.
-        contrast (float, optional): _description_. Defaults to 0.2.
-        saturation (float, optional): _description_. Defaults to 0.2.
-        hue (float, optional): _description_. Defaults to 0.1.
-
-    Returns:
-        _type_: _description_
-    """
-    image = tf.image.random_brightness(image, max_delta=brightness) 
-    image = tf.image.random_contrast(image, lower=1 - contrast, upper=1 + contrast)
-    image = tf.image.random_saturation(image, lower=1 - saturation, upper=1 + saturation)
-    image = tf.image.random_hue(image, max_delta=hue)
-    return image
-
-def resize_flip_scale_image(filepath: str, label: int, resize=(256,256), size=(224, 224), model="resnet"):
-    """ Loads an image then resizes, flips*, and scales it
-    *Random flip 1/2 of the time
-    Args:
-        filename (str): image path
-        label (int): label of the image
-        size (tuple, optional): resize size. Defaults to (224, 224).
-
-    Returns:
-        (tuple): image tensor and label
-    """
-    image = tf_io.read_file(filepath)  # Read image file
-    image = tf_image.decode_jpeg(image, channels=3)  # Decode JPEG image
-    image = tf_image.resize(image, [*resize])  # Resize 
-    image = tf_image.random_crop(image, size=(*size, 3))  # Random crop
-    image = tf_image.random_flip_left_right(image)  # Random flip
-    image = tf_image.random_flip_up_down(image)  # Random flip
-    image = color_jitter(image)  # Color jitter
-    image = tf_image.convert_image_dtype(image, tf.float32)  # Convert to float
-    if model == "resnet":
-        image = apply_resnet(image)
-    return image, label
-
-def apply_resnet (image):
-    """Applies preprocessing for ResNet models expects input in the range [-1, 1]
-
+class Preprocess:
+    def __init__(self, resize=(256,256), size=(224, 224), rotation=0.2, SEED=44):
+        self.SEED = SEED
+        self.resize = resize
+        self.size = size
+        self.rotation = rotation
+        self.resize_image = keras.layers.Resizing(*resize, crop_to_aspect_ratio=True)
+        self.rotate_image = keras.layers.RandomRotation(rotation, seed=self.SEED)
+        self.jitter = keras.layers.RandomColorJitter(seed=self.SEED)
+        
+    def resize_augment_image(self, filepath: str, augment=False, c_jitter=False):
+        """ Loads an image then resizes and flips* it
+        *Random flip 1/2 of the time
+        Args:
+            filename (str): image path
+            augment (bool, optional): whether to augment the image. Defaults to False.
+            c_jitter (bool, optional): whether to apply color jitter. Defaults to False.
+        Returns:
+            (tuple): image tensor and label
+        """
+        image = tf_io.read_file(filepath)  # Read image file
+        image = tf_image.decode_jpeg(image, channels=3)  # Decode JPEG image
+        image = self.resize_image(image)  # Resize image
+        image = tf_image.random_crop(image, (*self.size,3), seed=self.SEED)  # Random crop
+        if augment:
+            image = tf_image.random_flip_left_right(image, seed=self.SEED)  # Random flip
+            image = tf_image.random_flip_up_down(image, seed=self.SEED)  # Random flip
+            image = self.rotate_image(image) 
+        if c_jitter:
+            image = self.jitter(image)
+        image = tf.cast(image, tf.uint8)
+        return image
+    
+def apply_model_specific_preprocessing(image, model):
+    """Applies preprocessing for specific models
+    
     Args:
         image (_type_): image tensor
+        model (str): model name
     Returns:
-        _type
+        _type_
     """
-    image = tf.keras.applications.resnet.preprocess_input(image)
+    if model == "resnet":
+        image = keras.applications.resnet_v2.preprocess_input(image)
+    elif model == "efficientnet":
+        image = keras.applications.efficientnet.preprocess_input(image)
+    # TODO: add the preprocessing for swintransformer
+    # elif model == "swintransformer":
+        
+    else:
+        raise ValueError(f"Model {model} not supported")
     return image
 
 class Mix:
