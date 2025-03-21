@@ -3,3 +3,11 @@ archive/
 __pycache__/
 
 .vscode/
+
+logs/
+
+*.keras
+
+records/
+
+hyperband_tuning/
