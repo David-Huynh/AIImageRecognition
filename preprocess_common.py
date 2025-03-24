@@ -52,6 +52,7 @@ def apply_model_specific_preprocessing(image, model):
         _type_
     """
     if model == "resnet":
+        image = tf.cast(image, tf.float32)
         image = keras.applications.resnet_v2.preprocess_input(image)
     elif model == "efficientnet":
         image = keras.applications.efficientnet.preprocess_input(image)
