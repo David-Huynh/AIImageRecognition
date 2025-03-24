@@ -81,3 +81,35 @@ def load_tfrecord(filename, batch_size, model="efficientnet"):
     dataset = tf_data.TFRecordDataset(filename)
     dataset = dataset.map(lambda example: parse_tfrecord_fn(example, model), num_parallel_calls=AUTO, deterministic=True).batch(batch_size, num_parallel_calls=AUTO, deterministic=True).prefetch(AUTO)
     return dataset
+
+
+def create_test_example(image):
+    """Create a tf.train.Example from an image."""
+    feature = {
+        "image": image_feature(image)
+    }
+    return tf.train.Example(features=tf.train.Features(feature=feature))
+
+def save_test_tfrecord(dataset, filename):
+    """Save the test dataset to a TFRecord file."""
+    with tf.io.TFRecordWriter(filename) as writer:
+        for image_batch in dataset:
+            for i in range(image_batch.shape[0]):  # Iterate over batch elements
+                example = create_test_example(image_batch[i])
+                writer.write(example.SerializeToString())
+                
+def parse_test_tfrecord(example, model):
+    """Parse the serialized example."""
+    feature_description = {
+        "image": tf.io.FixedLenFeature([], tf.string)
+    }
+    example = tf.io.parse_single_example(example, feature_description)
+    image = tf.io.decode_jpeg(example["image"], channels=3)
+    image = apply_model_specific_preprocessing(image, model)
+    return image
+
+def load_test_tfrecord(filename, batch_size, model="efficientnet"):
+    """Load a test TFRecord file."""
+    dataset = tf_data.TFRecordDataset(filename)
+    dataset = dataset.map(lambda example: parse_test_tfrecord(example, model), num_parallel_calls=AUTO, deterministic=True).batch(batch_size, num_parallel_calls=AUTO, deterministic=True).prefetch(AUTO)
+    return dataset
