@@ -81,3 +81,26 @@ def load_tfrecord(filename, batch_size, model="efficientnet"):
     dataset = tf_data.TFRecordDataset(filename)
     dataset = dataset.map(lambda example: parse_tfrecord_fn(example, model), num_parallel_calls=AUTO, deterministic=True).batch(batch_size, num_parallel_calls=AUTO, deterministic=True).prefetch(AUTO)
     return dataset
+
+# def apply_model_specific_preprocessing(image, model):
+#     """Applies preprocessing for specific models
+    
+#     Args:
+#         image (_type_): image tensor
+#         model (str): model name
+#     Returns:
+#         _type_
+#     """
+#     if model == "resnet":
+#         # ResNet에 맞는 전처리
+#         image = keras.applications.resnet_v2.preprocess_input(image)
+#     elif model == "efficientnet":
+#         # EfficientNet에 맞는 전처리
+#         image = keras.applications.efficientnet.preprocess_input(image)
+#     elif model == "swintransformer":
+#         # Swin Transformer에 맞는 전처리
+#         image = tf.image.resize(image, (256, 256))  # 크기 조정
+#         image = tf.cast(image, tf.float32) / 255.0  # 정규화
+#     else:
+#         raise ValueError(f"Model {model} not supported")
+#     return image

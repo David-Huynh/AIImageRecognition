@@ -55,8 +55,10 @@ def apply_model_specific_preprocessing(image, model):
         image = keras.applications.resnet_v2.preprocess_input(image)
     elif model == "efficientnet":
         image = keras.applications.efficientnet.preprocess_input(image)
-    # TODO: add the preprocessing for swintransformer
-    # elif model == "swintransformer":
+    elif model == "swintransformer":
+        # Swin Transformer에 맞는 전처리
+        #image = tf.image.resize(image, (256, 256))  # 크기 조정
+        image = tf.cast(image, tf.float32) / 255.0  # 정규화
         
     else:
         raise ValueError(f"Model {model} not supported")
