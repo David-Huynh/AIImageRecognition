@@ -17,6 +17,7 @@ class Preprocess:
         self.rotation = rotation
         self.resize_image = keras.layers.Resizing(*resize, crop_to_aspect_ratio=True)
         self.rotate_image = keras.layers.RandomRotation(rotation, seed=self.SEED)
+        self.blur = keras.layers.RandomGaussianBlur(seed=self.SEED)
         self.jitter = keras.layers.RandomColorJitter(seed=self.SEED)
         
     def resize_augment_image(self, filepath: str, augment=False, c_jitter=False):
@@ -37,6 +38,7 @@ class Preprocess:
             image = tf_image.random_flip_left_right(image, seed=self.SEED)  # Random flip
             image = tf_image.random_flip_up_down(image, seed=self.SEED)  # Random flip
             image = self.rotate_image(image) 
+            image = self.blur(image)
         if c_jitter:
             image = self.jitter(image)
         image = tf.cast(image, tf.uint8)
@@ -138,6 +140,7 @@ class Mix:
             _type_: cutmix image and label
         """
         IMG_SIZE = self.IMG_SIZE
+
         (image1, label1), (image2, label2) = train_ds_one, train_ds_two
 
         # Get a sample from the Beta distribution

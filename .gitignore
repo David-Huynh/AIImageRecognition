@@ -4,10 +4,10 @@ __pycache__/
 
 .vscode/
 
-logs/
-
 *.keras
 
 records/
+
+logs/
 
 hyperband_tuning/
