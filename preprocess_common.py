@@ -53,10 +53,10 @@ def apply_model_specific_preprocessing(image, model):
     Returns:
         _type_
     """
-    if model == "resnet":
+    if model == "resnet" or model == "res_ens":
         image = tf.cast(image, tf.float32)
         image = keras.applications.resnet_v2.preprocess_input(image)
-    elif model == "efficientnet":
+    elif model == "efficientnet" or model == "eff_ens":
         image = keras.applications.efficientnet.preprocess_input(image)
     # TODO: add the preprocessing for swintransformer
     # elif model == "swintransformer":

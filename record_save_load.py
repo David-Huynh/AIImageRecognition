@@ -25,6 +25,7 @@ def image_feature(value):
     
 def label_feature(value):
     """Returns a int64_list from a one hot encoded label."""
+
     value = int(tf.argmax(value).numpy())
     return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
