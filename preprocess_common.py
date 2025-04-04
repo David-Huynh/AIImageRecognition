@@ -58,7 +58,7 @@ def apply_model_specific_preprocessing(image, model):
     elif model == "swintransformer":
         # Swin Transformer에 맞는 전처리
         #image = tf.image.resize(image, (256, 256))  # 크기 조정
-        image = tf.cast(image, tf.float32) / 255.0  # 정규화
+        image = tf.cast(image, tf.float64) / 255.0  # 정규화
         
     else:
         raise ValueError(f"Model {model} not supported")
@@ -164,7 +164,7 @@ class Mix:
 
         # Adjust Lambda in accordance to the pixel ration
         lambda_value = 1 - (target_w * target_h) / (IMG_SIZE * IMG_SIZE)
-        lambda_value = keras.ops.cast(lambda_value, "float32")
+        lambda_value = keras.ops.cast(lambda_value, "float64")
 
         # Combine the labels of both images
         label = lambda_value * label1 + (1 - lambda_value) * label2
