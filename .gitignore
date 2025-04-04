@@ -9,3 +9,13 @@ logs/
 *.keras
 
 records/
+
+*.png
+
+*.jpg
+
+*.jpeg
+# Model files
+*.pt
+best_model*
+test_predictions.csv 
