@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow import io as tf_io
 from tensorflow import clip_by_value
 from tensorflow import image as tf_image
-from tensorflow.random import gamma as tf_random_gamma
+from tensorflow import random
 
 class Preprocess:
     def __init__(self, resize=(256,256), size=(224, 224), rotation=0.2, SEED=44):
@@ -17,6 +17,7 @@ class Preprocess:
         self.rotation = rotation
         self.resize_image = keras.layers.Resizing(*resize, crop_to_aspect_ratio=True)
         self.rotate_image = keras.layers.RandomRotation(rotation, seed=self.SEED)
+        self.blur = keras.layers.RandomGaussianBlur(seed=self.SEED)
         self.jitter = keras.layers.RandomColorJitter(seed=self.SEED)
         
     def resize_augment_image(self, filepath: str, augment=False, c_jitter=False):
@@ -37,6 +38,7 @@ class Preprocess:
             image = tf_image.random_flip_left_right(image, seed=self.SEED)  # Random flip
             image = tf_image.random_flip_up_down(image, seed=self.SEED)  # Random flip
             image = self.rotate_image(image) 
+            image = self.blur(image)
         if c_jitter:
             image = self.jitter(image)
         image = tf.cast(image, tf.uint8)
@@ -52,6 +54,7 @@ def apply_model_specific_preprocessing(image, model):
         _type_
     """
     if model == "resnet":
+        image = tf.cast(image, tf.float32)
         image = keras.applications.resnet_v2.preprocess_input(image)
     elif model == "efficientnet":
         image = keras.applications.efficientnet.preprocess_input(image)
@@ -80,8 +83,8 @@ class Mix:
         Returns:
             _type_: beta distribution sample
         """
-        gamma_1_sample = tf_random_gamma(shape=[size], alpha=concentration_1)
-        gamma_2_sample = tf_random_gamma(shape=[size], alpha=concentration_0)
+        gamma_1_sample = random.gamma(shape=[size], alpha=concentration_1)
+        gamma_2_sample = random.gamma(shape=[size], alpha=concentration_0)
         return gamma_1_sample / (gamma_1_sample + gamma_2_sample)
 
 
@@ -137,6 +140,7 @@ class Mix:
             _type_: cutmix image and label
         """
         IMG_SIZE = self.IMG_SIZE
+
         (image1, label1), (image2, label2) = train_ds_one, train_ds_two
 
         # Get a sample from the Beta distribution
